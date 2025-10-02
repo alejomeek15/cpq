@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPQ - Página de Inicio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Carga tu configuración de Firebase para que esté disponible en la app -->
+    <script src="firebase-config.js"></script>
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+        }
+        .card { 
+            transition: transform 0.3s ease, box-shadow 0.3s ease; 
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    
+    <!-- Header / Navbar -->
+    <nav class="bg-white dark:bg-gray-800 shadow-md">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="text-xl font-semibold text-indigo-600 dark:text-indigo-400">CPQ System</div>
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">Profile</a>
+                <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">Help</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-indigo-600 dark:text-indigo-400">Panel de Control Principal</h1>
+            <p class="text-lg mt-2 text-gray-600 dark:text-gray-400">Selecciona un módulo para comenzar a trabajar.</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <!-- Tarjeta de Catálogo -->
+            <a href="catalogo.html" class="card bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 text-center">
+                <h2 class="text-2xl font-bold text-indigo-700 dark:text-indigo-400">Catálogo</h2>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">Administra tus productos.</p>
+            </a>
+            
+            <!-- Tarjeta de Clientes -->
+            <a href="#" class="card bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 text-center">
+                <h2 class="text-2xl font-bold text-indigo-700 dark:text-indigo-400">Clientes</h2>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">Gestiona tu base de clientes.</p>
+            </a>
+            
+            <!-- Tarjeta de Cotizador -->
+            <a href="#" class="card bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 text-center">
+                <h2 class="text-2xl font-bold text-indigo-700 dark:text-indigo-400">Cotizador</h2>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">Crea y envía cotizaciones.</p>
+            </a>
+
+            <!-- Tarjeta de Analytics -->
+            <a href="#" class="card bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 text-center">
+                <h2 class="text-2xl font-bold text-indigo-700 dark:text-indigo-400">Analytics</h2>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">Visualiza tus métricas.</p>
+            </a>
+
+        </div>
+    </main>
+</body>
+</html>
+

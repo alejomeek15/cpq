@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPQ - Catálogo de Productos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Archivo de configuración de Firebase (importante que cargue antes del script) -->
+    <script src="firebase-config.js" defer></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    
+    <!-- Header / Navbar -->
+    <nav class="bg-white dark:bg-gray-800 shadow-md">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="landing_page.html" class="text-xl font-semibold text-indigo-600 dark:text-indigo-400">CPQ System</a>
+            <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">Ayuda</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Catálogo de Productos</h1>
+            <a href="crear_producto.html" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 w-full sm:w-auto text-center">
+                + Crear Producto
+            </a>
+        </div>
+
+        <!-- Contenedor donde se mostrarán los productos -->
+        <div id="product-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Mensaje inicial de carga -->
+            <p id="loading-message" class="text-gray-500 col-span-full">Autenticando y cargando productos...</p>
+        </div>
+    </main>
+
+    <!-- Script para conectar con Firebase y mostrar los productos -->
+    <script type="module">
+        // 1. Importa las funciones de Firebase que necesitas
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // 2. Espera a que la configuración de Firebase esté disponible
+        const checkFirebaseConfig = setInterval(() => {
+            if (window.firebaseConfig) {
+                clearInterval(checkFirebaseConfig);
+                initializeAppLogic();
+            }
+        }, 100);
+
+        // 3. Función principal para inicializar y obtener datos
+        async function initializeAppLogic() {
+            const app = initializeApp(window.firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+
+            const productListContainer = document.getElementById('product-list');
+            
+            try {
+                // Autentica al usuario de forma anónima antes de leer los datos
+                await signInAnonymously(auth);
+                console.log("Usuario autenticado anónimamente.");
+
+                // 4. Obtén una referencia a la colección 'productos'
+                const querySnapshot = await getDocs(collection(db, "productos"));
+                
+                // Limpia el contenido del contenedor
+                productListContainer.innerHTML = '';
+
+                // 5. Si no hay productos, muestra un mensaje
+                if (querySnapshot.empty) {
+                    productListContainer.innerHTML = '<p class="text-gray-500 col-span-full">No hay productos en el catálogo. ¡Añade uno para empezar!</p>';
+                    return;
+                }
+
+                // 6. Recorre cada producto encontrado
+                querySnapshot.forEach((doc) => {
+                    const product = doc.data();
+
+                    // CORRECCIÓN: Usar los nombres de campo en español de la base de datos
+                    const nombre = product.nombre || 'Nombre no disponible';
+                    const descripcion = product.descripcion || 'Sin descripción.';
+                    const sku = product.sku || 'N/A';
+                    const precio = (typeof product.precioBase === 'number') 
+                                   ? product.precioBase.toFixed(2) 
+                                   : '0.00';
+
+                    // 7. Crea el HTML para la tarjeta del producto
+                    const productCard = `
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 flex flex-col justify-between">
+                            <div>
+                                <h2 class="text-xl font-bold text-indigo-700 dark:text-indigo-400">${nombre}</h2>
+                                <p class="mt-2 text-gray-600 dark:text-gray-400 min-h-[40px]">${descripcion}</p>
+                            </div>
+                            <div class="mt-4 flex justify-between items-end">
+                                <span class="text-sm font-medium text-gray-500 dark:text-gray-400">SKU: ${sku}</span>
+                                <p class="text-2xl font-bold text-indigo-500 dark:text-indigo-300">$${precio}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 8. Añade la tarjeta al contenedor
+                    productListContainer.innerHTML += productCard;
+                });
+
+            } catch (error) {
+                console.error("Error al obtener los productos: ", error);
+                productListContainer.innerHTML = `<p class="text-red-500 col-span-full">Error al cargar los productos. Revisa la consola para más detalles. Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+
+</body>
+</html>
+

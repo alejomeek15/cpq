@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPQ - Crear Nuevo Producto</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Archivo de configuración de Firebase -->
+    <script src="firebase-config.js" defer></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilos para los placeholders */
+        ::placeholder {
+            color: #4a5568;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen px-4">
+
+    <div class="w-full max-w-2xl p-8 space-y-8 bg-gray-800 rounded-2xl shadow-2xl">
+        <div>
+            <h1 class="text-3xl font-bold text-indigo-400">Crear Nuevo Producto</h1>
+        </div>
+
+        <!-- Formulario de Creación de Producto -->
+        <form id="create-product-form" class="space-y-6">
+            <!-- Nombre del Producto -->
+            <div>
+                <label for="product-name" class="block mb-2 text-sm font-medium text-gray-400">Nombre del Producto</label>
+                <input type="text" id="product-name" name="product-name"
+                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    required>
+            </div>
+
+            <!-- Descripción -->
+            <div>
+                <label for="product-description" class="block mb-2 text-sm font-medium text-gray-400">Descripción</label>
+                <textarea id="product-description" name="product-description" rows="4"
+                    class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    required></textarea>
+            </div>
+
+            <!-- Fila para Precio y SKU -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="product-price" class="block mb-2 text-sm font-medium text-gray-400">Precio Base (USD)</label>
+                    <input type="text" id="product-price" name="product-price" inputmode="decimal"
+                        class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="0.00" required>
+                </div>
+                <div>
+                    <label for="product-sku" class="block mb-2 text-sm font-medium text-gray-400">SKU</label>
+                    <input type="text" id="product-sku" name="product-sku"
+                        class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        required>
+                </div>
+            </div>
+
+            <!-- Mensaje de Estado -->
+            <div id="status-message" class="text-center font-medium h-5"></div>
+
+            <!-- Botones de Acción -->
+            <div class="flex items-center justify-end space-x-4 pt-4">
+                <button type="button" id="cancel-button"
+                    class="px-6 py-3 font-semibold text-white bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-gray-500 disabled:bg-gray-500 disabled:cursor-not-allowed" disabled>
+                    Cancelar
+                </button>
+                <button type="submit" id="save-button"
+                    class="px-6 py-3 font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed" disabled>
+                    Guardar Producto
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Pop-up de Confirmación (oculto por defecto) -->
+    <div id="success-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center px-4 z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-500 mb-6">
+                <svg class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-white">¡Producto Creado!</h3>
+            <p class="text-gray-400 mt-2 mb-8">El nuevo producto ha sido guardado en el catálogo exitosamente.</p>
+            <button id="modal-ok-button" class="w-full px-6 py-3 font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors duration-300">
+                Aceptar
+            </button>
+        </div>
+    </div>
+
+    <!-- Script de Lógica con Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const checkFirebaseConfig = setInterval(() => {
+            if (window.firebaseConfig) {
+                clearInterval(checkFirebaseConfig);
+                initializeAppLogic();
+            }
+        }, 100);
+
+        function initializeAppLogic() {
+            const app = initializeApp(window.firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+            
+            const productsCollectionRef = collection(db, "productos");
+
+            const statusMessage = document.getElementById('status-message');
+            const saveButton = document.getElementById('save-button');
+            const cancelButton = document.getElementById('cancel-button');
+            const createForm = document.getElementById('create-product-form');
+            const priceInput = document.getElementById('product-price');
+            const successModal = document.getElementById('success-modal');
+            const modalOkButton = document.getElementById('modal-ok-button');
+
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    saveButton.disabled = false;
+                    cancelButton.disabled = false;
+                } else {
+                    signInAnonymously(auth).catch(error => {
+                        console.error("Error de autenticación anónima:", error);
+                        statusMessage.textContent = "Error: no se pudo autenticar.";
+                        statusMessage.className = 'text-red-500';
+                    });
+                }
+            });
+
+            const formatCurrency = (value) => {
+                if (!value) return '';
+                const numberValue = parseFloat(value.replace(/[^0-9.]/g, ''));
+                if (isNaN(numberValue)) return '';
+                return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(numberValue);
+            };
+
+            const parseCurrency = (value) => {
+                 return parseFloat(value.replace(/[^0-9.]/g, ''));
+            }
+
+            priceInput.addEventListener('input', (e) => {
+                const cursorPosition = e.target.selectionStart;
+                const originalLength = e.target.value.length;
+                e.target.value = formatCurrency(e.target.value);
+                const newLength = e.target.value.length;
+                e.target.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
+            });
+
+            cancelButton.addEventListener('click', () => {
+                window.location.href = 'catalogo.html';
+            });
+            
+            modalOkButton.addEventListener('click', () => {
+                 window.location.href = 'catalogo.html';
+            });
+
+            createForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                saveButton.disabled = true;
+                saveButton.textContent = 'Guardando...';
+                statusMessage.textContent = '';
+                
+                const name = document.getElementById('product-name').value;
+                const description = document.getElementById('product-description').value;
+                const price = parseCurrency(priceInput.value);
+                const sku = document.getElementById('product-sku').value;
+
+                if (isNaN(price)) {
+                    statusMessage.textContent = 'El precio debe ser un número válido.';
+                    statusMessage.className = 'text-red-500';
+                    saveButton.disabled = false;
+                    saveButton.textContent = 'Guardar Producto';
+                    return;
+                }
+
+                try {
+                    // CORRECCIÓN: Guardar los campos en español
+                    await addDoc(productsCollectionRef, {
+                        nombre: name,
+                        descripcion: description,
+                        precioBase: price,
+                        sku: sku
+                    });
+
+                    successModal.classList.remove('hidden');
+                
+                } catch (error) {
+                    console.error("Error al guardar el producto: ", error);
+                    statusMessage.textContent = 'Error al guardar. Inténtalo de nuevo.';
+                    statusMessage.className = 'text-red-500';
+                } finally {
+                    saveButton.disabled = false;
+                    saveButton.textContent = 'Guardar Producto';
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
+
