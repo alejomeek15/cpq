@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPQ - Clientes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="firebase-config.js" defer></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    
+    <!-- Header / Navbar -->
+    <nav class="bg-white dark:bg-gray-800 shadow-md">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="landing_page.html" class="text-xl font-semibold text-indigo-600 dark:text-indigo-400">CPQ System</a>
+            <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">Ayuda</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Clientes</h1>
+                 <!-- Menú de Acciones -->
+                <div class="relative group">
+                    <button id="actions-list-btn" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
+                    <!-- Tooltip Personalizado -->
+                    <div class="absolute left-0 bottom-full mb-2 w-auto px-3 py-1.5 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                        Acciones
+                    </div>
+                    <!-- Menú Desplegable -->
+                    <div id="actions-list-dropdown" class="hidden absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-xl z-20 border border-gray-200 dark:border-gray-700">
+                        <a href="importar_clientes.html" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Importar registros</a>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                 <!-- Selector de Vista -->
+                <div class="flex items-center p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                    <button id="list-view-btn" class="p-2 rounded-md bg-white dark:bg-gray-500 shadow">
+                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    </button>
+                    <button id="kanban-view-btn" class="p-2 rounded-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                    </button>
+                </div>
+                <a href="gestionar_cliente.html" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg transition duration-300 w-full sm:w-auto text-center">
+                    + Nuevo
+                </a>
+            </div>
+        </div>
+
+        <!-- Contenedor VISTA LISTA -->
+        <div id="client-list-container" class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+            <!-- La tabla se generará aquí -->
+        </div>
+
+        <!-- Contenedor VISTA KANBAN -->
+        <div id="client-kanban-container" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Las tarjetas Kanban se generarán aquí -->
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        
+        document.addEventListener('DOMContentLoaded', () => {
+             const checkFirebaseConfig = setInterval(() => {
+                if (window.firebaseConfig) {
+                    clearInterval(checkFirebaseConfig);
+                    initializeAppLogic();
+                }
+            }, 100);
+        });
+
+        function initializeAppLogic() {
+            const app = initializeApp(window.firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+
+            const listContainer = document.getElementById('client-list-container');
+            const kanbanContainer = document.getElementById('client-kanban-container');
+            const listViewBtn = document.getElementById('list-view-btn');
+            const kanbanViewBtn = document.getElementById('kanban-view-btn');
+            const actionsListBtn = document.getElementById('actions-list-btn');
+            const actionsListDropdown = document.getElementById('actions-list-dropdown');
+
+
+            const fetchAndRenderClients = async () => {
+                await signInAnonymously(auth).catch(err => console.error(err));
+                
+                listContainer.innerHTML = `<p class="p-4 text-gray-500">Cargando clientes...</p>`;
+                kanbanContainer.innerHTML = `<p class="p-4 text-gray-500 col-span-full">Cargando clientes...</p>`;
+
+                try {
+                    const querySnapshot = await getDocs(collection(db, "clientes"));
+                    
+                    if (querySnapshot.empty) {
+                        const emptyMessage = '<p class="p-4 text-gray-500 col-span-full text-center">No hay clientes. ¡Añade uno para empezar!</p>';
+                        listContainer.innerHTML = emptyMessage;
+                        kanbanContainer.innerHTML = emptyMessage;
+                        return;
+                    }
+
+                    let listHtml = `
+                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Nombre</th>
+                                    <th scope="col" class="px-6 py-3">Email</th>
+                                    <th scope="col" class="px-6 py-3">Teléfono</th>
+                                    <th scope="col" class="px-6 py-3">País</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    let kanbanHtml = '';
+
+                    querySnapshot.forEach((doc) => {
+                        const client = doc.data();
+                        const clientId = doc.id;
+                        const initial = client.nombre ? client.nombre.charAt(0).toUpperCase() : '?';
+                        const colorIndex = initial.charCodeAt(0) % 5;
+                        const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-purple-500'];
+
+                        listHtml += `
+                            <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                                    <a href="gestionar_cliente.html?id=${clientId}" class="hover:underline flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full ${colors[colorIndex]} flex items-center justify-center text-white font-bold">${initial}</div>
+                                        ${client.nombre || 'N/A'}
+                                    </a>
+                                </td>
+                                <td class="px-6 py-4">${client.email || ''}</td>
+                                <td class="px-6 py-4">${client.telefono || ''}</td>
+                                <td class="px-6 py-4">${client.direccion?.pais || ''}</td>
+                            </tr>
+                        `;
+
+                        kanbanHtml += `
+                            <a href="gestionar_cliente.html?id=${clientId}" class="block bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+                                <div class="flex items-start gap-4">
+                                    <div class="flex-shrink-0 w-12 h-12 rounded-lg ${colors[colorIndex]} flex items-center justify-center text-white text-2xl font-bold">${initial}</div>
+                                    <div class="flex-grow">
+                                        <h3 class="font-bold text-gray-900 dark:text-white truncate">${client.nombre || 'N/A'}</h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                            ${client.email || ''}
+                                        </p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                            ${client.telefono || ''}
+                                        </p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            ${client.direccion?.ciudad || ''}, ${client.direccion?.pais || ''}
+                                        </p>
+                                    </div>
+                                </div>
+                            </a>
+                        `;
+                    });
+
+                    listHtml += '</tbody></table>';
+                    listContainer.innerHTML = listHtml;
+                    kanbanContainer.innerHTML = kanbanHtml;
+                } catch (error) {
+                    console.error("Error al obtener los clientes:", error);
+                    const errorMessage = `<p class="p-4 text-red-500 col-span-full">Error al cargar los clientes.</p>`;
+                    listContainer.innerHTML = errorMessage;
+                    kanbanContainer.innerHTML = errorMessage;
+                }
+            };
+            
+            // --- Lógica de Vistas (Lista / Kanban) ---
+            listViewBtn.addEventListener('click', () => {
+                listContainer.classList.remove('hidden');
+                kanbanContainer.classList.add('hidden');
+                listViewBtn.classList.add('bg-white', 'dark:bg-gray-500', 'shadow');
+                kanbanViewBtn.classList.remove('bg-white', 'dark:bg-gray-500', 'shadow');
+            });
+            kanbanViewBtn.addEventListener('click', () => {
+                listContainer.classList.add('hidden');
+                kanbanContainer.classList.remove('hidden');
+                kanbanViewBtn.classList.add('bg-white', 'dark:bg-gray-500', 'shadow');
+                listViewBtn.classList.remove('bg-white', 'dark:bg-gray-500', 'shadow');
+            });
+
+            // --- Lógica de Acciones (Menú desplegable) ---
+             if (actionsListBtn) {
+                actionsListBtn.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    actionsListDropdown.classList.toggle('hidden');
+                });
+            }
+
+            window.addEventListener('click', () => {
+                if (actionsListDropdown && !actionsListDropdown.classList.contains('hidden')) {
+                    actionsListDropdown.classList.add('hidden');
+                }
+            });
+            
+            fetchAndRenderClients();
+        }
+    </script>
+</body>
+</html>
+
