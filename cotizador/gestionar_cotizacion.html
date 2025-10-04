@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPQ - Gestionar Cotización</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="../firebase-config.js" defer></script>
+    <style> 
+        body { font-family: 'Inter', sans-serif; } 
+        #search-results {
+            position: fixed; /* Usamos fixed para escapar de los contenedores */
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <main class="container mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <div class="mb-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <a href="cotizador.html" class="text-sm text-indigo-500 hover:underline mb-2 block">&larr; Volver a Cotizaciones</a>
+                    <h1 id="quote-number-header" class="text-4xl font-bold text-gray-800 dark:text-white">Nueva Cotización</h1>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="save-btn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">Guardar</button>
+                </div>
+            </div>
+             <div class="mt-4 border-b border-gray-200 dark:border-gray-700">
+                <nav class="flex -mb-px">
+                    <a href="#" class="py-4 px-1 border-b-2 border-indigo-500 font-medium text-sm text-indigo-600 dark:text-indigo-400">
+                        Líneas del pedido
+                    </a>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- Formulario Principal -->
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Selector de Cliente -->
+                <div>
+                    <label for="customer-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cliente</label>
+                    <select id="customer-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-700">
+                        <option value="">Selecciona un cliente</option>
+                    </select>
+                </div>
+                <!-- Fecha de Vencimiento -->
+                <div>
+                    <label for="expiration-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Vencimiento</label>
+                    <input type="date" id="expiration-date" class="mt-1 block w-full pl-3 pr-4 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-700">
+                </div>
+            </div>
+        </div>
+
+        <!-- Líneas de Pedido -->
+        <div class="mt-8">
+            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Productos</h2>
+            <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+                 <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th class="px-6 py-3">Producto</th>
+                            <th class="px-6 py-3 w-24">Cantidad</th>
+                            <th class="px-6 py-3 w-40">Precio Unitario</th>
+                            <th class="px-6 py-3 w-48">Impuestos</th>
+                            <th class="px-6 py-3 w-40 text-right">Importe</th>
+                            <th class="px-2 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="quote-lines-tbody">
+                        <!-- Las líneas de productos se añadirán aquí -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4 flex items-center gap-4">
+                <button id="add-product-btn" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">+ Añadir un producto</button>
+                <button id="open-catalog-btn" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">Catálogo</button>
+            </div>
+        </div>
+        
+        <!-- Totales -->
+        <div class="mt-8 flex justify-end">
+            <div class="w-full max-w-sm p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md space-y-4">
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">Base imponible:</span>
+                    <span id="subtotal" class="font-semibold text-gray-800 dark:text-white">$0.00</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600 dark:text-gray-400">IVA 19%:</span>
+                    <span id="tax" class="font-semibold text-gray-800 dark:text-white">$0.00</span>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+                <div class="flex justify-between text-xl">
+                    <span class="font-bold text-gray-800 dark:text-white">Total:</span>
+                    <span id="total" class="font-bold text-indigo-600 dark:text-indigo-400">$0.00</span>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Pop-up de Confirmación de Guardado -->
+    <div id="success-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center px-4 z-50">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-500 mb-6">
+                <svg class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <h3 class="text-2xl font-bold text-white">¡Cotización Guardada!</h3>
+            <p class="text-gray-400 mt-2 mb-8">La cotización ha sido guardada exitosamente.</p>
+            <button id="modal-ok-button" class="w-full px-6 py-3 font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">Aceptar</button>
+        </div>
+    </div>
+
+    <!-- Modal de Catálogo de Productos -->
+    <div id="product-catalog-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center px-4 z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-5xl w-full max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Catálogo de Productos</h2>
+                <button id="close-catalog-btn" class="text-gray-500 hover:text-gray-800 dark:hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+            <div id="catalog-product-list" class="flex-grow overflow-y-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pr-4">
+                <!-- Los productos del catálogo se renderizarán aquí -->
+            </div>
+            <div id="catalog-footer" class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                 <button id="add-to-quote-btn" class="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed">
+                    Volver a la cotizacion
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, setDoc, addDoc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkFirebaseConfig = setInterval(() => {
+                if (window.firebaseConfig) {
+                    clearInterval(checkFirebaseConfig);
+                    initializeAppLogic();
+                }
+            }, 100);
+        });
+
+        async function initializeAppLogic() {
+            const app = initializeApp(window.firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+            await signInAnonymously(auth);
+
+            // --- Selectores del DOM ---
+            const customerSelect = document.getElementById('customer-select');
+            const addProductBtn = document.getElementById('add-product-btn');
+            const quoteLinesTbody = document.getElementById('quote-lines-tbody');
+            const expirationDateInput = document.getElementById('expiration-date');
+            const quoteNumberHeader = document.getElementById('quote-number-header');
+            const saveBtn = document.getElementById('save-btn');
+            const successModal = document.getElementById('success-modal');
+            const modalOkButton = document.getElementById('modal-ok-button');
+            const openCatalogBtn = document.getElementById('open-catalog-btn');
+            const closeCatalogBtn = document.getElementById('close-catalog-btn');
+            const productCatalogModal = document.getElementById('product-catalog-modal');
+            const catalogProductList = document.getElementById('catalog-product-list');
+            const addToQuoteBtn = document.getElementById('add-to-quote-btn');
+
+
+            // --- Estado de la aplicación ---
+            let allProducts = [];
+            let quoteLines = [];
+            let currentQuoteId = null;
+            let catalogCart = {}; // { productId: quantity, ... }
+
+            // --- Cargar datos iniciales (Clientes y Productos) ---
+            const customersSnapshot = await getDocs(collection(db, "clientes"));
+            customersSnapshot.forEach(doc => {
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = doc.data().nombre;
+                customerSelect.appendChild(option);
+            });
+            
+            const productsSnapshot = await getDocs(collection(db, "productos"));
+            allProducts = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // --- Lógica de Modo (Crear vs. Editar) ---
+            const urlParams = new URLSearchParams(window.location.search);
+            currentQuoteId = urlParams.get('id');
+
+            if (currentQuoteId) {
+                const docRef = doc(db, "cotizaciones", currentQuoteId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const quoteData = docSnap.data();
+                    quoteNumberHeader.textContent = quoteData.numero;
+                    customerSelect.value = quoteData.clienteId;
+                    if (quoteData.vencimiento) {
+                        expirationDateInput.value = quoteData.vencimiento.toDate().toISOString().split('T')[0];
+                    }
+                    quoteLines = quoteData.lineas;
+                    renderAllLines();
+                    updateTotals();
+                }
+            }
+            
+            // --- Funciones de Renderizado y Cálculo ---
+            const renderAllLines = () => {
+                quoteLinesTbody.innerHTML = '';
+                quoteLines.forEach(line => renderLine(line));
+            };
+
+            const renderLine = (line) => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b dark:border-gray-700 product-line-row';
+                tr.dataset.lineId = line.id;
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-medium text-gray-800 dark:text-white">${line.productName}</td>
+                    <td class="px-6 py-4"><input type="number" value="${line.quantity}" min="1" class="quantity-input w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1 text-center"></td>
+                    <td class="px-6 py-4"><input type="number" value="${line.price.toFixed(2)}" step="0.01" class="price-input w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1 text-right"></td>
+                    <td class="px-6 py-4 text-center">IVA 19%</td>
+                    <td class="px-6 py-4 text-right font-semibold line-total">$${(line.quantity * line.price).toFixed(2)}</td>
+                    <td class="px-2 py-4"><button class="remove-line-btn text-red-500 hover:text-red-700">🗑️</button></td>
+                `;
+                quoteLinesTbody.appendChild(tr);
+            };
+
+            function updateTotals() {
+                let subtotal = 0;
+                quoteLines.forEach(line => {
+                    const lineTotal = line.quantity * line.price;
+                    line.total = lineTotal;
+                    subtotal += lineTotal;
+
+                    const tr = quoteLinesTbody.querySelector(`tr[data-line-id='${line.id}']`);
+                    if(tr) {
+                        tr.querySelector('.line-total').textContent = `$${lineTotal.toFixed(2)}`;
+                    }
+                });
+                const tax = subtotal * 0.19;
+                const total = subtotal + tax;
+                document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+                document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
+                document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+                return { subtotal, tax, total };
+            }
+
+            const addProductToQuote = (product, quantity = 1) => {
+                const existingLine = quoteLines.find(line => line.productId === product.id);
+                if (existingLine) {
+                    existingLine.quantity += quantity;
+                } else {
+                     const newLine = {
+                        id: Date.now(),
+                        productId: product.id,
+                        productName: product.nombre,
+                        quantity: quantity,
+                        price: product.precioBase || 0,
+                        total: (product.precioBase || 0) * quantity,
+                    };
+                    quoteLines.push(newLine);
+                }
+                renderAllLines();
+                updateTotals();
+            }
+
+             // --- Lógica del Catálogo Modal ---
+            const updateCatalogUI = () => {
+                const productCards = catalogProductList.querySelectorAll('.product-card');
+                let hasSelection = Object.keys(catalogCart).length > 0;
+                productCards.forEach(card => {
+                    const productId = card.dataset.id;
+                    const quantity = catalogCart[productId];
+                    const addButton = card.querySelector('.add-button');
+                    const quantitySelector = card.querySelector('.quantity-selector');
+                    const quantityInput = card.querySelector('.catalog-quantity-input');
+
+                    if (quantity > 0) {
+                        addButton.classList.add('hidden');
+                        quantitySelector.classList.remove('hidden');
+                        quantityInput.value = quantity;
+                    } else {
+                        addButton.classList.remove('hidden');
+                        quantitySelector.classList.add('hidden');
+                    }
+                });
+                addToQuoteBtn.disabled = !hasSelection;
+            };
+
+            const renderCatalog = () => {
+                catalogProductList.innerHTML = '';
+                allProducts.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = "product-card bg-white dark:bg-gray-700 p-4 rounded-lg shadow flex flex-col justify-between";
+                    card.dataset.id = product.id;
+                    card.innerHTML = `
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-gray-800 dark:text-white">${product.nombre}</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">SKU: ${product.sku || 'N/A'}</p>
+                            <p class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mt-2">$${(product.precioBase || 0).toFixed(2)}</p>
+                        </div>
+                        <div class="mt-4">
+                            <button class="add-button w-full bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-4 py-2 rounded-lg font-semibold hover:bg-indigo-200 dark:hover:bg-indigo-800 flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"></path></svg>
+                                Añadir
+                            </button>
+                            <div class="quantity-selector hidden items-center justify-between">
+                                <button class="dec-qty-btn bg-gray-200 dark:bg-gray-600 px-3 py-1 rounded-l-md">-</button>
+                                <input type="number" class="catalog-quantity-input w-12 text-center bg-transparent border-t border-b dark:border-gray-600" value="1" min="1">
+                                <button class="inc-qty-btn bg-gray-200 dark:bg-gray-600 px-3 py-1 rounded-r-md">+</button>
+                                <button class="remove-from-cart-btn text-red-500 ml-2">🗑️</button>
+                            </div>
+                        </div>
+                    `;
+                    catalogProductList.appendChild(card);
+                });
+                updateCatalogUI();
+            };
+
+            openCatalogBtn.addEventListener('click', () => {
+                // Sincronizar quoteLines con catalogCart ANTES de abrir
+                catalogCart = {};
+                quoteLines.forEach(line => {
+                    catalogCart[line.productId] = line.quantity;
+                });
+                renderCatalog();
+                productCatalogModal.classList.remove('hidden');
+            });
+            closeCatalogBtn.addEventListener('click', () => productCatalogModal.classList.add('hidden'));
+
+            catalogProductList.addEventListener('click', (e) => {
+                const card = e.target.closest('.product-card');
+                if (!card) return;
+                const productId = card.dataset.id;
+                
+                if (e.target.closest('.add-button')) {
+                    catalogCart[productId] = 1;
+                }
+                if (e.target.closest('.inc-qty-btn')) {
+                    catalogCart[productId] = (catalogCart[productId] || 0) + 1;
+                }
+                if (e.target.closest('.dec-qty-btn')) {
+                    catalogCart[productId] = (catalogCart[productId] || 0) - 1;
+                    if (catalogCart[productId] < 1) delete catalogCart[productId];
+                }
+                if (e.target.closest('.remove-from-cart-btn')) {
+                    delete catalogCart[productId];
+                }
+                if (e.target.classList.contains('catalog-quantity-input')) {
+                     e.target.addEventListener('change', () => {
+                        const newQty = parseInt(e.target.value);
+                        if (newQty > 0) catalogCart[productId] = newQty;
+                        else delete catalogCart[productId];
+                        updateCatalogUI();
+                    });
+                }
+                updateCatalogUI();
+            });
+
+            addToQuoteBtn.addEventListener('click', () => {
+                const newQuoteLines = [];
+                // Reconstruir quoteLines basado en el estado final del carrito del catálogo
+                for (const productId in catalogCart) {
+                    const quantity = catalogCart[productId];
+                    const product = allProducts.find(p => p.id === productId);
+                    if (product) {
+                        // Buscar si ya existía una línea para preservar su ID único si es posible
+                        const existingLine = quoteLines.find(l => l.productId === productId);
+                        newQuoteLines.push({
+                            id: existingLine ? existingLine.id : Date.now(),
+                            productId: product.id,
+                            productName: product.nombre,
+                            quantity: quantity,
+                            price: product.precioBase || 0,
+                            total: (product.precioBase || 0) * quantity
+                        });
+                    }
+                }
+                quoteLines = newQuoteLines;
+                renderAllLines();
+                updateTotals();
+                productCatalogModal.classList.add('hidden');
+            });
+
+
+            // --- Lógica para Añadir Producto con Búsqueda ---
+            const handleOutsideClick = (e) => {
+                const searchRow = document.getElementById('search-row');
+                const searchResults = document.getElementById('search-results');
+                if (searchRow && !searchRow.contains(e.target) && searchResults && !searchResults.contains(e.target)) {
+                    cleanupSearch();
+                }
+            };
+            
+            const cleanupSearch = () => {
+                const searchRow = document.getElementById('search-row');
+                const searchResults = document.getElementById('search-results');
+                if (searchRow) searchRow.remove();
+                if (searchResults) searchResults.remove();
+                document.removeEventListener('click', handleOutsideClick);
+            };
+            
+            addProductBtn.addEventListener('click', () => {
+                if (document.getElementById('search-row')) return;
+
+                cleanupSearch(); 
+
+                const searchRow = document.createElement('tr');
+                searchRow.id = 'search-row';
+                searchRow.innerHTML = `
+                    <td class="px-6 py-2 relative" colspan="1">
+                        <input type="text" id="product-search-input" placeholder="Buscar o crear..." class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    </td>
+                    <td class="py-2 text-center">1</td>
+                    <td class="py-2 text-right">$0.00</td>
+                    <td class="py-2 text-center">IVA 19%</td>
+                    <td class="py-2 text-right">$0.00</td>
+                    <td></td>
+                `;
+                quoteLinesTbody.appendChild(searchRow);
+                const searchInput = document.getElementById('product-search-input');
+                searchInput.focus();
+                
+                const searchResultsContainer = document.createElement('div');
+                searchResultsContainer.id = 'search-results';
+                searchResultsContainer.className = 'hidden bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-md shadow-lg mt-1 w-full max-h-60 overflow-y-auto';
+                document.body.appendChild(searchResultsContainer);
+
+                const positionResults = () => {
+                    const rect = searchInput.getBoundingClientRect();
+                    searchResultsContainer.style.left = `${rect.left}px`;
+                    searchResultsContainer.style.top = `${rect.bottom + window.scrollY}px`;
+                    searchResultsContainer.style.width = `${rect.width}px`;
+                };
+                positionResults();
+
+                searchInput.addEventListener('input', () => {
+                    positionResults();
+                    const query = searchInput.value.toLowerCase();
+                    if (query.length < 1) {
+                        searchResultsContainer.classList.add('hidden');
+                        return;
+                    }
+                    // CORRECCIÓN: Filtrar por nombre O SKU
+                    const filtered = allProducts.filter(p => 
+                        p.nombre.toLowerCase().includes(query) ||
+                        (p.sku && p.sku.toLowerCase().includes(query))
+                    );
+                    searchResultsContainer.innerHTML = '';
+                    if (filtered.length > 0) {
+                        filtered.forEach(product => {
+                            const item = document.createElement('div');
+                            item.className = 'p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700';
+                            item.innerHTML = `
+                                <div>${product.nombre}</div>
+                                <div class="text-xs text-gray-500">${product.sku || ''}</div>
+                            `;
+                            item.addEventListener('click', () => {
+                                addProductToQuote(product);
+                                cleanupSearch();
+                            });
+                            searchResultsContainer.appendChild(item);
+                        });
+                    } else {
+                        const noResult = document.createElement('div');
+                        noResult.className = 'p-2 text-gray-500';
+                        noResult.textContent = `Crear "${searchInput.value}"`;
+                        noResult.addEventListener('click', () => {
+                             searchInput.dispatchEvent(new KeyboardEvent('keydown', {'key': 'Enter'}));
+                        });
+                        searchResultsContainer.appendChild(noResult);
+                    }
+                    searchResultsContainer.classList.remove('hidden');
+                });
+
+                searchInput.addEventListener('keydown', async (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const query = searchInput.value.trim();
+                        if (query.length === 0) return;
+                        
+                        const existingProduct = allProducts.find(p => p.nombre.toLowerCase() === query.toLowerCase());
+                        if (existingProduct) {
+                            addProductToQuote(existingProduct);
+                        } else {
+                            // Crear nuevo producto
+                            const newProductData = {
+                                nombre: query,
+                                precioBase: 0,
+                                sku: '',
+                                fechaCreacion: serverTimestamp()
+                            };
+                            const docRef = await addDoc(collection(db, "productos"), newProductData);
+                            const newProductWithId = { id: docRef.id, ...newProductData };
+                            allProducts.push(newProductWithId);
+                            addProductToQuote(newProductWithId);
+                        }
+                        cleanupSearch();
+                    }
+                });
+
+                setTimeout(() => {
+                    document.addEventListener('click', handleOutsideClick);
+                }, 0);
+            });
+
+
+            // --- Manejadores de Eventos en la Tabla ---
+            quoteLinesTbody.addEventListener('change', (e) => {
+                const tr = e.target.closest('tr.product-line-row');
+                if (!tr) return;
+                const lineId = parseInt(tr.dataset.lineId);
+                const line = quoteLines.find(l => l.id === lineId);
+                if (!line) return;
+                
+                if(e.target.classList.contains('quantity-input')) line.quantity = parseFloat(e.target.value) || 1;
+                if(e.target.classList.contains('price-input')) line.price = parseFloat(e.target.value) || 0;
+                updateTotals();
+            });
+            
+            quoteLinesTbody.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-line-btn')) {
+                    const tr = e.target.closest('tr');
+                    const lineId = parseInt(tr.dataset.lineId);
+                    quoteLines = quoteLines.filter(l => l.id !== lineId);
+                    tr.remove();
+                    updateTotals();
+                }
+            });
+
+            modalOkButton.addEventListener('click', () => {
+                successModal.classList.add('hidden');
+                window.location.href = 'cotizador.html';
+            });
+
+            // --- Lógica de Guardado ---
+            const saveQuote = async () => {
+                if (!customerSelect.value) {
+                    alert('Por favor, selecciona un cliente.');
+                    return;
+                }
+                saveBtn.disabled = true;
+
+                const totals = updateTotals();
+                const selectedOption = customerSelect.options[customerSelect.selectedIndex];
+                
+                const quoteData = {
+                    clienteId: customerSelect.value,
+                    clienteNombre: selectedOption.textContent,
+                    vencimiento: expirationDateInput.value ? Timestamp.fromDate(new Date(expirationDateInput.value)) : null,
+                    lineas: quoteLines,
+                    subtotal: totals.subtotal,
+                    impuestos: totals.tax,
+                    total: totals.total,
+                    estado: 'Presupuesto',
+                    fechaActualizacion: serverTimestamp(),
+                };
+
+                try {
+                    if (currentQuoteId) {
+                        const docRef = doc(db, "cotizaciones", currentQuoteId);
+                        await setDoc(docRef, quoteData, { merge: true });
+                    } else {
+                        const quotesCollection = collection(db, "cotizaciones");
+                        const countSnapshot = await getDocs(quotesCollection);
+                        quoteData.numero = `S${(countSnapshot.size + 1).toString().padStart(5, '0')}`;
+                        quoteData.fechaCreacion = serverTimestamp();
+                        const newDocRef = await addDoc(quotesCollection, quoteData);
+                        currentQuoteId = newDocRef.id;
+                    }
+                    successModal.classList.remove('hidden');
+                } catch (error) {
+                    console.error("Error saving quote:", error);
+                    alert('Hubo un error al guardar la cotización.');
+                } finally {
+                    saveBtn.disabled = false;
+                }
+            };
+            
+            saveBtn.addEventListener('click', saveQuote);
+        }
+    </script>
+</body>
+</html>
+

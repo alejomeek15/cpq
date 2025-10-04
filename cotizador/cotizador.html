@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPQ - Cotizaciones</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="../firebase-config.js" defer></script>
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <nav class="bg-white dark:bg-gray-800 shadow-md">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="../landing_page.html" class="text-xl font-semibold text-indigo-600 dark:text-indigo-400">CPQ System</a>
+            <a href="#" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">Ayuda</a>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Cotizaciones</h1>
+            <a href="gestionar_cotizacion.html" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">+ Nuevo</a>
+        </div>
+
+        <div id="loading-message" class="text-gray-500 text-center">Cargando cotizaciones...</div>
+        <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">Número</th>
+                        <th scope="col" class="px-6 py-3">Fecha de creación</th>
+                        <th scope="col" class="px-6 py-3">Cliente</th>
+                        <th scope="col" class="px-6 py-3">Total</th>
+                        <th scope="col" class="px-6 py-3">Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="quotes-tbody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkFirebaseConfig = setInterval(() => {
+                if (window.firebaseConfig) {
+                    clearInterval(checkFirebaseConfig);
+                    initializeAppLogic();
+                }
+            }, 100);
+        });
+
+        async function initializeAppLogic() {
+            const app = initializeApp(window.firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+            await signInAnonymously(auth);
+
+            const loadingMessage = document.getElementById('loading-message');
+            const quotesTbody = document.getElementById('quotes-tbody');
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "cotizaciones"));
+                loadingMessage.classList.add('hidden');
+
+                if (querySnapshot.empty) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td colspan="5" class="text-center py-10 text-gray-500">No hay cotizaciones. ¡Crea una para empezar!</td>`;
+                    quotesTbody.appendChild(tr);
+                    return;
+                }
+
+                querySnapshot.forEach(doc => {
+                    const quote = doc.data();
+                    const tr = document.createElement('tr');
+                    tr.className = "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600";
+                    
+                    const formattedDate = quote.fechaCreacion?.toDate().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) || 'N/A';
+                    const formattedTotal = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(quote.total || 0);
+
+                    tr.innerHTML = `
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            <a href="gestionar_cotizacion.html?id=${doc.id}" class="hover:underline text-indigo-500">${quote.numero || 'N/A'}</a>
+                        </th>
+                        <td class="px-6 py-4">${formattedDate}</td>
+                        <td class="px-6 py-4">${quote.clienteNombre || 'N/A'}</td>
+                        <td class="px-6 py-4 font-bold">${formattedTotal}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">${quote.estado || 'Presupuesto'}</span>
+                        </td>
+                    `;
+                    quotesTbody.appendChild(tr);
+                });
+
+            } catch (error) {
+                console.error("Error fetching quotes:", error);
+                loadingMessage.textContent = 'Error al cargar las cotizaciones.';
+            }
+        }
+    </script>
+</body>
+</html>
