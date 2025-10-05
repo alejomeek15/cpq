@@ -3,11 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPQ - Cotizaciones</title>
+    <title>CPQ - Lista de Cotizaciones</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="../firebase-config.js" defer></script>
-    <style> body { font-family: 'Inter', sans-serif; } </style>
+    <style> 
+        body { font-family: 'Inter', sans-serif; }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .status-borrador { background-color: #6b7280; color: white; } /* Gris */
+        .status-enviada { background-color: #f59e0b; color: white; } /* Ámbar */
+        .status-en-negociación { background-color: #3b82f6; color: white; } /* Azul */
+        .status-aprobada { background-color: #10b981; color: white; } /* Verde */
+        .status-rechazada { background-color: #ef4444; color: white; } /* Rojo */
+        .status-vencida { background-color: #1f2937; color: #9ca3af; } /* Gris oscuro */
+    </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
@@ -19,21 +35,37 @@
     </nav>
 
     <main class="container mx-auto p-4 md:p-8">
+        <!-- Header -->
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">Cotizaciones</h1>
             <a href="gestionar_cotizacion.html" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">+ Nuevo</a>
         </div>
 
+        <!-- Contenedor de la Lista -->
         <div id="loading-message" class="text-gray-500 text-center">Cargando cotizaciones...</div>
-        <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+        <div id="list-container" class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     <tr>
+                        <th scope="col" class="p-4 w-4">
+                            <input type="checkbox" id="select-all-checkbox" class="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500">
+                        </th>
                         <th scope="col" class="px-6 py-3">Número</th>
-                        <th scope="col" class="px-6 py-3">Fecha de creación</th>
+                        <th scope="col" class="px-6 py-3">Fecha de Creación</th>
                         <th scope="col" class="px-6 py-3">Cliente</th>
                         <th scope="col" class="px-6 py-3">Total</th>
-                        <th scope="col" class="px-6 py-3">Estado</th>
+                        <th scope="col" class="px-6 py-3 flex items-center justify-between">
+                            Estado
+                             <!-- Menú de acciones contextual -->
+                            <div id="selection-actions" class="hidden relative">
+                                <button id="actions-menu-btn" class="text-gray-500 hover:text-gray-700 dark:hover:text-white">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                </button>
+                                <div id="actions-menu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-md shadow-lg z-10 border dark:border-gray-700">
+                                    <button id="delete-selected-btn" class="w-full text-left block px-4 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700">Eliminar</button>
+                                </div>
+                            </div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="quotes-tbody"></tbody>
@@ -43,9 +75,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
+        
         document.addEventListener('DOMContentLoaded', () => {
             const checkFirebaseConfig = setInterval(() => {
                 if (window.firebaseConfig) {
@@ -61,47 +93,133 @@
             const auth = getAuth(app);
             await signInAnonymously(auth);
 
+            let allQuotes = [];
+            const selectedQuotes = new Set();
+            
             const loadingMessage = document.getElementById('loading-message');
-            const quotesTbody = document.getElementById('quotes-tbody');
+            const listContainer = document.getElementById('list-container');
+            const tbody = document.getElementById('quotes-tbody');
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            const selectionActions = document.getElementById('selection-actions');
+            const actionsMenuBtn = document.getElementById('actions-menu-btn');
+            const actionsMenu = document.getElementById('actions-menu');
+            const deleteSelectedBtn = document.getElementById('delete-selected-btn');
 
-            try {
-                const querySnapshot = await getDocs(collection(db, "cotizaciones"));
-                loadingMessage.classList.add('hidden');
+            const fetchAndRender = async () => {
+                try {
+                    const querySnapshot = await getDocs(collection(db, "cotizaciones"));
+                    allQuotes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                if (querySnapshot.empty) {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td colspan="5" class="text-center py-10 text-gray-500">No hay cotizaciones. ¡Crea una para empezar!</td>`;
-                    quotesTbody.appendChild(tr);
-                    return;
+                    loadingMessage.classList.add('hidden');
+                    tbody.innerHTML = '';
+
+                    if (allQuotes.length === 0) {
+                        listContainer.innerHTML = '<p class="text-center text-gray-500 py-10">No hay cotizaciones. ¡Crea una para empezar!</p>';
+                        return;
+                    }
+
+                    allQuotes.sort((a, b) => b.fechaCreacion.toMillis() - a.fechaCreacion.toMillis());
+
+                    allQuotes.forEach(quote => {
+                        const tr = document.createElement('tr');
+                        tr.className = "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600";
+                        
+                        const statusText = (quote.estado || 'Borrador').toLowerCase().replace(/\s/g, '-');
+                        const statusClass = `status-${statusText}`;
+                        const formattedDate = quote.fechaCreacion ? quote.fechaCreacion.toDate().toLocaleDateString('es-CO') : 'N/A';
+
+                        tr.innerHTML = `
+                            <td class="w-4 p-4">
+                                <input type="checkbox" data-id="${quote.id}" class="item-checkbox w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded">
+                            </td>
+                            <th scope="row" class="px-6 py-4 font-medium text-indigo-500 whitespace-nowrap dark:text-indigo-400">
+                                <a href="gestionar_cotizacion.html?id=${quote.id}" class="hover:underline">${quote.numero || 'N/A'}</a>
+                            </th>
+                            <td class="px-6 py-4">${formattedDate}</td>
+                            <td class="px-6 py-4">${quote.clienteNombre || ''}</td>
+                            <td class="px-6 py-4">$${(quote.total || 0).toFixed(2)}</td>
+                            <td class="px-6 py-4">
+                                <span class="status-badge ${statusClass}">${quote.estado || 'Borrador'}</span>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                } catch (error) {
+                    console.error("Error fetching quotes:", error);
+                    loadingMessage.textContent = 'Error al cargar las cotizaciones.';
                 }
+            };
+            
+            const updateSelectionUI = () => {
+                const count = selectedQuotes.size;
+                selectionActions.classList.toggle('hidden', count === 0);
 
-                querySnapshot.forEach(doc => {
-                    const quote = doc.data();
-                    const tr = document.createElement('tr');
-                    tr.className = "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600";
-                    
-                    const formattedDate = quote.fechaCreacion?.toDate().toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) || 'N/A';
-                    const formattedTotal = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(quote.total || 0);
-
-                    tr.innerHTML = `
-                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            <a href="gestionar_cotizacion.html?id=${doc.id}" class="hover:underline text-indigo-500">${quote.numero || 'N/A'}</a>
-                        </th>
-                        <td class="px-6 py-4">${formattedDate}</td>
-                        <td class="px-6 py-4">${quote.clienteNombre || 'N/A'}</td>
-                        <td class="px-6 py-4 font-bold">${formattedTotal}</td>
-                        <td class="px-6 py-4">
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">${quote.estado || 'Presupuesto'}</span>
-                        </td>
-                    `;
-                    quotesTbody.appendChild(tr);
+                document.querySelectorAll('.item-checkbox').forEach(cb => {
+                    cb.checked = selectedQuotes.has(cb.dataset.id);
                 });
 
-            } catch (error) {
-                console.error("Error fetching quotes:", error);
-                loadingMessage.textContent = 'Error al cargar las cotizaciones.';
-            }
+                selectAllCheckbox.checked = count > 0 && count === allQuotes.length;
+                selectAllCheckbox.indeterminate = count > 0 && count < allQuotes.length;
+            };
+
+            tbody.addEventListener('change', (e) => {
+                if (e.target.classList.contains('item-checkbox')) {
+                    const id = e.target.dataset.id;
+                    if (e.target.checked) {
+                        selectedQuotes.add(id);
+                    } else {
+                        selectedQuotes.delete(id);
+                    }
+                    updateSelectionUI();
+                }
+            });
+
+            selectAllCheckbox.addEventListener('change', () => {
+                const isChecked = selectAllCheckbox.checked;
+                const checkboxes = document.querySelectorAll('.item-checkbox');
+                checkboxes.forEach(cb => {
+                    const id = cb.dataset.id;
+                    cb.checked = isChecked;
+                    if (isChecked) {
+                        selectedQuotes.add(id);
+                    } else {
+                        selectedQuotes.delete(id);
+                    }
+                });
+                updateSelectionUI();
+            });
+
+            actionsMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                actionsMenu.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', () => {
+                actionsMenu.classList.add('hidden');
+            });
+
+            deleteSelectedBtn.addEventListener('click', async () => {
+                if (confirm(`¿Estás seguro de que quieres eliminar ${selectedQuotes.size} cotización(es)?`)) {
+                    try {
+                        const batch = writeBatch(db);
+                        selectedQuotes.forEach(id => {
+                            batch.delete(doc(db, "cotizaciones", id));
+                        });
+                        await batch.commit();
+                        selectedQuotes.clear();
+                        updateSelectionUI();
+                        await fetchAndRender();
+                    } catch (error) {
+                        console.error("Error deleting quotes:", error);
+                        alert("Hubo un error al eliminar las cotizaciones.");
+                    }
+                }
+            });
+
+            await fetchAndRender();
         }
     </script>
 </body>
 </html>
+
