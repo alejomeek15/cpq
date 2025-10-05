@@ -6,90 +6,66 @@
     <title>CPQ - Importar Clientes</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Archivo de configuración de Firebase -->
-    <script src="firebase-config.js" defer></script>
-    <!-- Librería para parsear CSV -->
+    <!-- Ruta corregida para subir un nivel -->
+    <script src="../firebase-config.js" defer></script>
+    <!-- PapaParse para leer CSV -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .drop-zone {
-            border: 2px dashed #9ca3af; /* gray-400 */
-            transition: all 0.2s ease-in-out;
-        }
-        .drop-zone.dragover {
-            border-color: #4f46e5; /* indigo-600 */
-            background-color: #e0e7ff; /* indigo-100 */
-        }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-
-    <!-- Header / Navbar -->
-    <nav class="bg-white dark:bg-gray-800 shadow-md">
-        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <a href="clientes.html" class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400">← Clientes</a>
-                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Importar un archivo</h2>
+<body class="bg-gray-900 text-gray-200">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-semibold text-white">Importar un archivo</h1>
+            <div>
+                 <!-- Ruta a un archivo en la misma carpeta -->
+                <a href="clientes.html" class="text-gray-400 hover:text-indigo-400 transition-colors">Cancelar</a>
             </div>
-            <a href="clientes.html" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</a>
         </div>
-    </nav>
-    
+    </header>
+
     <!-- Main Content -->
-    <main class="container mx-auto p-4 md:p-8 flex items-center justify-center" style="min-height: calc(100vh - 68px);">
-        <div class="w-full max-w-2xl text-center">
-            <div id="drop-zone" class="drop-zone bg-white dark:bg-gray-800 p-10 rounded-xl shadow-lg">
-                <input type="file" id="file-input" class="hidden" accept=".csv">
-                <div class="flex flex-col items-center gap-4">
-                    <svg class="w-16 h-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <p class="text-lg font-medium text-gray-700 dark:text-gray-300">Arrastre o suba el archivo a importar</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Se recomiendan los archivos .csv</p>
-                    <button id="upload-btn" class="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Seleccionar archivo</button>
+    <main class="flex items-center justify-center py-20 px-4">
+        <div class="w-full max-w-lg text-center">
+            <div id="drop-area" class="border-2 border-dashed border-gray-600 rounded-xl p-12 cursor-pointer hover:border-indigo-500 transition-colors">
+                <input type="file" id="file-input" class="hidden" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+                <div class="flex flex-col items-center">
+                    <svg class="w-16 h-16 text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <p id="drop-area-text" class="text-lg font-semibold">Arrastre o suba el archivo a importar</p>
+                    <p class="text-sm text-gray-400 mt-2">Se recomiendan los archivos de Excel ya que el formato es automático. También puede usar archivos .csv</p>
                 </div>
             </div>
-
-            <div class="mt-8">
-                <button id="download-template-btn" class="text-indigo-600 dark:text-indigo-400 hover:underline">
-                    Descargar plantilla para importar
-                </button>
-            </div>
-             <div id="status-message" class="mt-6 text-center font-medium h-5"></div>
+            <div id="status-message" class="mt-4 text-center font-medium h-5"></div>
+            <button id="download-template" class="mt-8 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                Descargar Plantilla de Importación
+            </button>
         </div>
     </main>
 
-    <!-- Pop-up de Confirmación (oculto por defecto) -->
+    <!-- Modal de Éxito -->
     <div id="success-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center px-4 z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 text-left max-w-md w-full">
-            <div class="flex items-start gap-4">
-                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 dark:bg-green-900">
-                    <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
-                <div class="mt-0 text-left flex-grow">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white" id="modal-title">¡Éxito!</h3>
-                    <p class="text-gray-500 dark:text-gray-400 mt-2">Se importaron los siguientes clientes:</p>
-                    <ul id="imported-clients-list" class="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300 max-h-48 overflow-y-auto">
-                        <!-- Clientes importados se insertarán aquí -->
-                    </ul>
-                </div>
+        <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-md w-full">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-500 mb-6">
+                <svg class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
             </div>
-            <div class="mt-8 text-right">
-                <button id="modal-ok-button" class="w-full sm:w-auto px-6 py-2 font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
-                    Aceptar
-                </button>
+            <h3 class="text-2xl font-bold text-white text-center">¡Importación Exitosa!</h3>
+            <p class="text-gray-400 mt-2 mb-6 text-center">Los siguientes clientes han sido creados:</p>
+            <div id="imported-clients-list" class="bg-gray-700 rounded-lg p-4 max-h-48 overflow-y-auto text-left">
+                <!-- La lista de clientes se insertará aquí -->
             </div>
+            <button id="modal-ok-button" class="w-full mt-8 px-6 py-3 font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors duration-300">
+                Aceptar
+            </button>
         </div>
     </div>
 
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, writeBatch, serverTimestamp, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
         document.addEventListener('DOMContentLoaded', () => {
             const checkFirebaseConfig = setInterval(() => {
                 if (window.firebaseConfig) {
@@ -100,144 +76,84 @@
         });
 
         function initializeAppLogic() {
-            // --- Inicialización de Firebase ---
             const app = initializeApp(window.firebaseConfig);
             const db = getFirestore(app);
-            const auth = getAuth(app);
 
-            // --- Selectores del DOM ---
-            const dropZone = document.getElementById('drop-zone');
+            const dropArea = document.getElementById('drop-area');
             const fileInput = document.getElementById('file-input');
-            const uploadBtn = document.getElementById('upload-btn');
-            const downloadBtn = document.getElementById('download-template-btn');
+            const downloadTemplateBtn = document.getElementById('download-template');
             const statusMessage = document.getElementById('status-message');
+            const dropAreaText = document.getElementById('drop-area-text');
             const successModal = document.getElementById('success-modal');
-            const modalOkButton = document.getElementById('modal-ok-button');
             const importedClientsList = document.getElementById('imported-clients-list');
-            const modalTitle = document.getElementById('modal-title');
+            const modalOkButton = document.getElementById('modal-ok-button');
 
-            // --- Lógica de UI (Drag & Drop, Clics) ---
-            uploadBtn.addEventListener('click', () => fileInput.click());
-            dropZone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropZone.classList.add('dragover');
+            dropArea.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, false);
             });
-            dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-            dropZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropZone.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    handleFileUpload(files[0]);
-                }
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => dropArea.classList.add('border-indigo-500'), false);
             });
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files.length > 0) {
-                    handleFileUpload(fileInput.files[0]);
-                }
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, () => dropArea.classList.remove('border-indigo-500'), false);
             });
+            dropArea.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files), false);
+            
             modalOkButton.addEventListener('click', () => {
                 window.location.href = 'clientes.html';
             });
 
-
-            // --- Lógica de la Plantilla (Corregido con BOM) ---
-            downloadBtn.addEventListener('click', () => {
-                const headers = [
-                    'tipo', 'nombre', 'email', 'telefono', 
-                    'calle', 'ciudad', 'departamento', 'pais', 
-                    'identificacionNumero', 'sitioWeb', 
-                    'nombreCompania', 'puestoTrabajo'
-                ];
-                
-                const examples = [
-                    ['compañia', 'Jabones SAS', 'facturacion@jabones.com', '+57 601 555 1234', 'Calle Falsa 123', 'Bogotá', 'Cundinamarca', 'Colombia', '900.123.456-7', 'https://jabones.com', '', ''],
-                    ['individuo', 'Luis Mojica', 'luis.mojica@email.com', '+57 310 555 5678', 'Carrera 7 # 8-9', 'Medellín', 'Antioquia', 'Colombia', '', '', 'Jabones SAS', 'Director de Ventas']
-                ];
-
-                let csvString = headers.join(',') + '\n';
-                examples.forEach(rowArray => {
-                    let row = rowArray.join(',');
-                    csvString += row + '\n';
-                });
-
-                const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                
-                const link = document.createElement("a");
-                link.setAttribute("href", url);
-                link.setAttribute("download", "plantilla_clientes.csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-
-            // --- Lógica de Importación ---
-            async function handleFileUpload(file) {
-                if (file.type !== 'text/csv') {
-                    statusMessage.textContent = 'Error: Por favor, sube un archivo .csv';
-                    statusMessage.className = 'text-red-500';
-                    return;
+            const handleFiles = (files) => {
+                if (files.length > 0) {
+                    const file = files[0];
+                    dropAreaText.textContent = file.name;
+                    statusMessage.textContent = 'Procesando archivo...';
+                    statusMessage.className = 'text-indigo-400';
+                    parseCSV(file);
                 }
-                statusMessage.textContent = 'Procesando archivo...';
-                statusMessage.className = 'text-blue-500';
-                
-                await signInAnonymously(auth);
+            };
 
+            const parseCSV = (file) => {
                 Papa.parse(file, {
                     header: true,
                     skipEmptyLines: true,
                     complete: async (results) => {
                         const clients = results.data;
-                        if (clients.length === 0) {
-                            statusMessage.textContent = 'El archivo está vacío o no tiene el formato correcto.';
-                            statusMessage.className = 'text-yellow-500';
-                            return;
-                        }
-                        
+                        const importedNames = [];
                         try {
-                            const batch = writeBatch(db);
-                            const clientsCollectionRef = collection(db, "clientes");
-
-                            clients.forEach(client => {
-                                const newClientRef = doc(clientsCollectionRef);
+                            for (const client of clients) {
                                 const clientData = {
-                                    tipo: client.tipo || 'compañia',
-                                    nombre: client.nombre || '',
-                                    email: client.email || '',
-                                    telefono: client.telefono || '',
+                                    tipo: client.tipo,
+                                    nombre: client.nombre,
+                                    email: client.email,
+                                    telefono: client.telefono,
                                     direccion: {
-                                        calle: client.calle || '',
-                                        ciudad: client.ciudad || '',
-                                        departamento: client.departamento || '',
-                                        pais: client.pais || '',
+                                        calle: client.calle,
+                                        ciudad: client.ciudad,
+                                        departamento: client.departamento,
+                                        pais: client.pais,
                                     },
-                                    identificacionNumero: client.identificacionNumero || '',
-                                    sitioWeb: client.sitioWeb || '',
-                                    fechaCreacion: serverTimestamp()
+                                    identificacionNumero: client.identificacionNumero,
+                                    sitioWeb: client.sitioWeb,
+                                    nombreCompania: client.nombreCompania,
+                                    puestoTrabajo: client.puestoTrabajo,
+                                    fechaCreacion: serverTimestamp(),
+                                    fechaActualizacion: serverTimestamp()
                                 };
-                                if (client.tipo === 'individuo') {
-                                    clientData.nombreCompania = client.nombreCompania || '';
-                                    clientData.puestoTrabajo = client.puestoTrabajo || '';
-                                }
-                                batch.set(newClientRef, clientData);
-                            });
-
-                            await batch.commit();
+                                await addDoc(collection(db, "clientes"), clientData);
+                                importedNames.push(client.nombre);
+                            }
                             
-                            // Mostrar el modal en lugar de redirigir
-                            statusMessage.textContent = '';
-                            modalTitle.textContent = `¡Éxito! Se importaron ${clients.length} clientes.`;
-                            importedClientsList.innerHTML = ''; // Limpiar lista anterior
-                            clients.forEach(client => {
-                                const li = document.createElement('li');
-                                li.textContent = client.nombre;
-                                importedClientsList.appendChild(li);
-                            });
+                            importedClientsList.innerHTML = importedNames.map(name => `<p class="text-gray-300">- ${name}</p>`).join('');
                             successModal.classList.remove('hidden');
 
                         } catch (error) {
-                            console.error("Error al importar clientes: ", error);
+                            console.error("Error al importar clientes:", error);
                             statusMessage.textContent = 'Error al guardar los datos en la base de datos.';
                             statusMessage.className = 'text-red-500';
                         }
@@ -248,9 +164,25 @@
                         statusMessage.className = 'text-red-500';
                     }
                 });
-            }
+            };
+
+            downloadTemplateBtn.addEventListener('click', () => {
+                const headers = ["tipo", "nombre", "email", "telefono", "calle", "ciudad", "departamento", "pais", "identificacionNumero", "sitioWeb", "nombreCompania", "puestoTrabajo"];
+                const exampleCompany = ["compañia", "Jabones SAS", "facturacion@jabones.com", "+576015551234", "Calle Falsa 123", "Bogotá", "Cundinamarca", "Colombia", "900.123.456-7", "https://jabones.com", "", ""];
+                const exampleIndividual = ["individuo", "Luis Mojica", "luis.mojica@example.com", "+573105551234", "Carrera 7 # 8-90", "Medellín", "Antioquia", "Colombia", "12345678", "", "Jabones SAS", "Director de Ventas"];
+                
+                const csvContent = [headers, exampleCompany, exampleIndividual].map(e => e.join(",")).join("\n");
+                
+                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "plantilla_importacion_clientes.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
         }
     </script>
 </body>
 </html>
-
