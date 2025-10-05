@@ -23,23 +23,29 @@
             <div class="flex justify-between items-start">
                 <div>
                     <a href="cotizador.html" class="text-sm text-indigo-500 hover:underline mb-2 block">&larr; Volver a Cotizaciones</a>
-                    <h1 id="quote-number-header" class="text-4xl font-bold text-gray-800 dark:text-white">Nueva Cotización</h1>
+                    <div class="flex items-center gap-4">
+                        <h1 id="quote-number-header" class="text-4xl font-bold text-gray-800 dark:text-white">Nueva Cotización</h1>
+                    </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button id="print-btn" class="bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-lg font-semibold">Imprimir</button>
+                    <button id="cancel-btn" class="bg-gray-200 dark:bg-gray-700 px-4 py-2 rounded-lg font-semibold">Cancelar</button>
                     <button id="save-btn" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700">Guardar</button>
                 </div>
             </div>
-             <div class="mt-4 border-b border-gray-200 dark:border-gray-700">
-                <nav class="flex -mb-px">
-                    <a href="#" class="py-4 px-1 border-b-2 border-indigo-500 font-medium text-sm text-indigo-600 dark:text-indigo-400">
-                        Líneas del pedido
-                    </a>
-                </nav>
+            <!-- Selector de Estado -->
+            <div id="status-selector" class="mt-4 flex items-center border border-gray-300 dark:border-gray-600 rounded-lg p-1 max-w-max flex-wrap">
+                <button data-status="Borrador" class="status-btn px-3 py-1 text-sm font-medium rounded-md">Borrador</button>
+                <button data-status="Enviada" class="status-btn px-3 py-1 text-sm font-medium rounded-md">Enviada</button>
+                <button data-status="En negociación" class="status-btn px-3 py-1 text-sm font-medium rounded-md">En Negociación</button>
+                <button data-status="Aprobada" class="status-btn px-3 py-1 text-sm font-medium rounded-md">Aprobada</button>
+                <button data-status="Rechazada" class="status-btn px-3 py-1 text-sm font-medium rounded-md">Rechazada</button>
+                <button data-status="Vencida" class="status-btn px-3 py-1 text-sm font-medium rounded-md">Vencida</button>
             </div>
         </div>
         
         <!-- Formulario Principal -->
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Selector de Cliente -->
                 <div>
@@ -53,52 +59,80 @@
                     <label for="expiration-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Vencimiento</label>
                     <input type="date" id="expiration-date" class="mt-1 block w-full pl-3 pr-4 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-700">
                 </div>
+                <!-- Condiciones de Pago -->
+                <div>
+                    <label for="payment-terms-select" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Condiciones de pago</label>
+                    <select id="payment-terms-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-white dark:bg-gray-700">
+                        <option value="">Selecciona una condición</option>
+                    </select>
+                </div>
             </div>
         </div>
 
-        <!-- Líneas de Pedido -->
-        <div class="mt-8">
-            <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Productos</h2>
-            <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
-                 <table class="w-full text-sm text-left">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                        <tr>
-                            <th class="px-6 py-3">Producto</th>
-                            <th class="px-6 py-3 w-24">Cantidad</th>
-                            <th class="px-6 py-3 w-40">Precio Unitario</th>
-                            <th class="px-6 py-3 w-48">Impuestos</th>
-                            <th class="px-6 py-3 w-40 text-right">Importe</th>
-                            <th class="px-2 py-3"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="quote-lines-tbody">
-                        <!-- Las líneas de productos se añadirán aquí -->
-                    </tbody>
-                </table>
+        <!-- Pestañas -->
+        <div class="border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex -mb-px space-x-8" aria-label="Tabs">
+                <button id="tab-lineas" class="py-4 px-1 border-b-2 border-indigo-500 font-medium text-sm text-indigo-600 dark:text-indigo-400">
+                    Lineas de Cotización
+                </button>
+                <button id="tab-otra" class="py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300">
+                    Otra Información
+                </button>
+            </nav>
+        </div>
+
+        <!-- Contenido de las Pestañas -->
+        <div id="tab-content-lineas" class="mt-8">
+            <!-- Líneas de Pedido -->
+            <div>
+                <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Productos</h2>
+                <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
+                     <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th class="px-6 py-3">Producto</th>
+                                <th class="px-6 py-3 w-24">Cantidad</th>
+                                <th class="px-6 py-3 w-40">Precio Unitario</th>
+                                <th class="px-6 py-3 w-48">Impuestos</th>
+                                <th class="px-6 py-3 w-40 text-right">Importe</th>
+                                <th class="px-2 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="quote-lines-tbody">
+                            <!-- Las líneas de productos se añadirán aquí -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 flex items-center gap-4">
+                    <button id="add-product-btn" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">+ Añadir un producto</button>
+                    <button id="open-catalog-btn" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">Catálogo</button>
+                </div>
             </div>
-            <div class="mt-4 flex items-center gap-4">
-                <button id="add-product-btn" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">+ Añadir un producto</button>
-                <button id="open-catalog-btn" class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">Catálogo</button>
+            
+            <!-- Totales -->
+            <div class="mt-8 flex justify-end">
+                <div class="w-full max-w-sm p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md space-y-4">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">Base imponible:</span>
+                        <span id="subtotal" class="font-semibold text-gray-800 dark:text-white">$0.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400">IVA 19%:</span>
+                        <span id="tax" class="font-semibold text-gray-800 dark:text-white">$0.00</span>
+                    </div>
+                    <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+                    <div class="flex justify-between text-xl">
+                        <span class="font-bold text-gray-800 dark:text-white">Total:</span>
+                        <span id="total" class="font-bold text-indigo-600 dark:text-indigo-400">$0.00</span>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <!-- Totales -->
-        <div class="mt-8 flex justify-end">
-            <div class="w-full max-w-sm p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md space-y-4">
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">Base imponible:</span>
-                    <span id="subtotal" class="font-semibold text-gray-800 dark:text-white">$0.00</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600 dark:text-gray-400">IVA 19%:</span>
-                    <span id="tax" class="font-semibold text-gray-800 dark:text-white">$0.00</span>
-                </div>
-                <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
-                <div class="flex justify-between text-xl">
-                    <span class="font-bold text-gray-800 dark:text-white">Total:</span>
-                    <span id="total" class="font-bold text-indigo-600 dark:text-indigo-400">$0.00</span>
-                </div>
-            </div>
+
+        <div id="tab-content-otra" class="hidden mt-8">
+             <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                 <p class="text-gray-500 dark:text-gray-400">Aquí se mostrará otra información en el futuro.</p>
+             </div>
         </div>
     </main>
     
@@ -155,11 +189,13 @@
 
             // --- Selectores del DOM ---
             const customerSelect = document.getElementById('customer-select');
+            const paymentTermsSelect = document.getElementById('payment-terms-select');
             const addProductBtn = document.getElementById('add-product-btn');
             const quoteLinesTbody = document.getElementById('quote-lines-tbody');
             const expirationDateInput = document.getElementById('expiration-date');
             const quoteNumberHeader = document.getElementById('quote-number-header');
             const saveBtn = document.getElementById('save-btn');
+            const cancelBtn = document.getElementById('cancel-btn');
             const successModal = document.getElementById('success-modal');
             const modalOkButton = document.getElementById('modal-ok-button');
             const openCatalogBtn = document.getElementById('open-catalog-btn');
@@ -167,46 +203,54 @@
             const productCatalogModal = document.getElementById('product-catalog-modal');
             const catalogProductList = document.getElementById('catalog-product-list');
             const addToQuoteBtn = document.getElementById('add-to-quote-btn');
+            const tabLineas = document.getElementById('tab-lineas');
+            const tabOtra = document.getElementById('tab-otra');
+            const contentLineas = document.getElementById('tab-content-lineas');
+            const contentOtra = document.getElementById('tab-content-otra');
+            const statusSelector = document.getElementById('status-selector');
+            const statusBtns = statusSelector.querySelectorAll('.status-btn');
 
 
             // --- Estado de la aplicación ---
             let allProducts = [];
             let quoteLines = [];
             let currentQuoteId = null;
+            let currentStatus = "Borrador";
             let catalogCart = {}; // { productId: quantity, ... }
 
-            // --- Cargar datos iniciales (Clientes y Productos) ---
-            const customersSnapshot = await getDocs(collection(db, "clientes"));
-            customersSnapshot.forEach(doc => {
-                const option = document.createElement('option');
-                option.value = doc.id;
-                option.textContent = doc.data().nombre;
-                customerSelect.appendChild(option);
-            });
-            
-            const productsSnapshot = await getDocs(collection(db, "productos"));
-            allProducts = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            // --- Lógica de Modo (Crear vs. Editar) ---
-            const urlParams = new URLSearchParams(window.location.search);
-            currentQuoteId = urlParams.get('id');
-
-            if (currentQuoteId) {
-                const docRef = doc(db, "cotizaciones", currentQuoteId);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    const quoteData = docSnap.data();
-                    quoteNumberHeader.textContent = quoteData.numero;
-                    customerSelect.value = quoteData.clienteId;
-                    if (quoteData.vencimiento) {
-                        expirationDateInput.value = quoteData.vencimiento.toDate().toISOString().split('T')[0];
-                    }
-                    quoteLines = quoteData.lineas;
-                    renderAllLines();
-                    updateTotals();
+            // --- Lógica de Pestañas y Estados ---
+            const switchTab = (activeTab) => {
+                if (activeTab === 'lineas') {
+                    contentLineas.classList.remove('hidden');
+                    contentOtra.classList.add('hidden');
+                    tabLineas.className = 'py-4 px-1 border-b-2 border-indigo-500 font-medium text-sm text-indigo-600 dark:text-indigo-400';
+                    tabOtra.className = 'py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300';
+                } else {
+                    contentLineas.classList.add('hidden');
+                    contentOtra.classList.remove('hidden');
+                    tabOtra.className = 'py-4 px-1 border-b-2 border-indigo-500 font-medium text-sm text-indigo-600 dark:text-indigo-400';
+                    tabLineas.className = 'py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300';
                 }
-            }
+            };
             
+            const updateStatusUI = (status) => {
+                currentStatus = status;
+                statusBtns.forEach(btn => {
+                    if (btn.dataset.status === status) {
+                        btn.classList.add('bg-indigo-600', 'text-white');
+                        btn.classList.remove('text-gray-500', 'dark:text-gray-300');
+                    } else {
+                        btn.classList.remove('bg-indigo-600', 'text-white');
+                        btn.classList.add('text-gray-500', 'dark:text-gray-300');
+                    }
+                });
+            };
+
+            tabLineas.addEventListener('click', () => switchTab('lineas'));
+            tabOtra.addEventListener('click', () => switchTab('otra'));
+            statusBtns.forEach(btn => btn.addEventListener('click', () => updateStatusUI(btn.dataset.status)));
+
+
             // --- Funciones de Renderizado y Cálculo ---
             const renderAllLines = () => {
                 quoteLinesTbody.innerHTML = '';
@@ -220,9 +264,9 @@
                 tr.innerHTML = `
                     <td class="px-6 py-4 font-medium text-gray-800 dark:text-white">${line.productName}</td>
                     <td class="px-6 py-4"><input type="number" value="${line.quantity}" min="1" class="quantity-input w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1 text-center"></td>
-                    <td class="px-6 py-4"><input type="number" value="${line.price.toFixed(2)}" step="0.01" class="price-input w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1 text-right"></td>
+                    <td class="px-6 py-4"><input type="number" value="${(line.price || 0).toFixed(2)}" step="0.01" class="price-input w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md p-1 text-right"></td>
                     <td class="px-6 py-4 text-center">IVA 19%</td>
-                    <td class="px-6 py-4 text-right font-semibold line-total">$${(line.quantity * line.price).toFixed(2)}</td>
+                    <td class="px-6 py-4 text-right font-semibold line-total">$${((line.quantity || 1) * (line.price || 0)).toFixed(2)}</td>
                     <td class="px-2 py-4"><button class="remove-line-btn text-red-500 hover:text-red-700">🗑️</button></td>
                 `;
                 quoteLinesTbody.appendChild(tr);
@@ -231,7 +275,7 @@
             function updateTotals() {
                 let subtotal = 0;
                 quoteLines.forEach(line => {
-                    const lineTotal = line.quantity * line.price;
+                    const lineTotal = (line.quantity || 1) * (line.price || 0);
                     line.total = lineTotal;
                     subtotal += lineTotal;
 
@@ -267,6 +311,56 @@
                 updateTotals();
             }
 
+            // --- Cargar datos iniciales (Clientes, Productos, Condiciones de Pago) ---
+            const customersSnapshot = await getDocs(collection(db, "clientes"));
+            customersSnapshot.forEach(doc => {
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = doc.data().nombre;
+                customerSelect.appendChild(option);
+            });
+            
+            const productsSnapshot = await getDocs(collection(db, "productos"));
+            allProducts = productsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            const paymentTermsSnapshot = await getDocs(collection(db, "condicionesPago"));
+            paymentTermsSnapshot.forEach(doc => {
+                const option = document.createElement('option');
+                option.value = doc.data().nombre; // Guardar el nombre
+                option.textContent = doc.data().nombre;
+                paymentTermsSelect.appendChild(option);
+            });
+
+            // --- Lógica de Modo (Crear vs. Editar) ---
+            const urlParams = new URLSearchParams(window.location.search);
+            currentQuoteId = urlParams.get('id');
+
+            if (currentQuoteId) {
+                const docRef = doc(db, "cotizaciones", currentQuoteId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const quoteData = docSnap.data();
+                    quoteNumberHeader.textContent = quoteData.numero;
+                    customerSelect.value = quoteData.clienteId;
+                    paymentTermsSelect.value = quoteData.condicionesPago || "";
+                    if (quoteData.vencimiento) {
+                        expirationDateInput.value = quoteData.vencimiento.toDate().toISOString().split('T')[0];
+                    }
+                    updateStatusUI(quoteData.estado || "Borrador");
+                    
+                    quoteLines = (quoteData.lineas || []).map(line => ({
+                        ...line,
+                        quantity: line.quantity || 1,
+                        price: line.price || 0,
+                    }));
+
+                    renderAllLines();
+                    updateTotals();
+                }
+            } else {
+                updateStatusUI("Borrador"); // Estado inicial
+            }
+            
              // --- Lógica del Catálogo Modal ---
             const updateCatalogUI = () => {
                 const productCards = catalogProductList.querySelectorAll('.product-card');
@@ -444,7 +538,6 @@
                         searchResultsContainer.classList.add('hidden');
                         return;
                     }
-                    // CORRECCIÓN: Filtrar por nombre O SKU
                     const filtered = allProducts.filter(p => 
                         p.nombre.toLowerCase().includes(query) ||
                         (p.sku && p.sku.toLowerCase().includes(query))
@@ -535,6 +628,10 @@
                 successModal.classList.add('hidden');
                 window.location.href = 'cotizador.html';
             });
+            
+            cancelBtn.addEventListener('click', () => {
+                window.location.href = 'cotizador.html';
+            });
 
             // --- Lógica de Guardado ---
             const saveQuote = async () => {
@@ -551,11 +648,12 @@
                     clienteId: customerSelect.value,
                     clienteNombre: selectedOption.textContent,
                     vencimiento: expirationDateInput.value ? Timestamp.fromDate(new Date(expirationDateInput.value)) : null,
+                    condicionesPago: paymentTermsSelect.value,
                     lineas: quoteLines,
                     subtotal: totals.subtotal,
                     impuestos: totals.tax,
                     total: totals.total,
-                    estado: 'Presupuesto',
+                    estado: currentStatus,
                     fechaActualizacion: serverTimestamp(),
                 };
 
